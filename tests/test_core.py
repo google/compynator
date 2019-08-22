@@ -299,15 +299,15 @@ class CoreTest(unittest.TestCase):
         self.assertEqual(t('t'), Succeed(True)(''))
 
     def test_forward_plus(self):
-        f = Forward('f')
+        f = Forward()
         empty = Succeed('')
-        f = (Terminal('a') + f + f) | empty
+        f.is_((Terminal('a') + f + f) | empty)
         self.assertEqual(f('aaa'), Succeed('aaa')(''))
 
     def test_forward_then(self):
-        f = Forward('f')
+        f = Forward()
         empty = Succeed('')
-        f = Terminal('a').then(f).then(f) | empty
+        f.is_(Terminal('a').then(f).then(f) | empty)
         self.assertEqual(f('aaa'), Succeed('')(''))
 
     def test_memoize(self):
@@ -320,15 +320,15 @@ class CoreTest(unittest.TestCase):
 
     def test_direct_left_recursive(self):
         empty = Succeed('')
-        s = Forward('s')
-        s = ((s + (lambda _: Terminal('s'))) ^ empty).memoize()
+        s = Forward()
+        s.is_(((s + (lambda _: Terminal('s'))) ^ empty).memoize())
         self.assertEqual(len(s('s' * 20)), 21)
 
     def test_indirect_left_recursive(self):
         empty = Succeed('')
-        s1 = Forward('s1')
+        s1 = Forward()
         s2 = (s1 + (lambda _: Terminal('s'))) ^ empty
-        s1 = ((s2 + (lambda _: Terminal('s'))) ^ empty).memoize()
+        s1.is_(((s2 + (lambda _: Terminal('s'))) ^ empty).memoize())
         self.assertEqual(len(s1('s' * 20)), 21)
 
     def test_max_recursion(self):
@@ -367,21 +367,23 @@ class CoreTest(unittest.TestCase):
         # See https://leetcode.com/problems/parsing-a-boolean-expression.
         t = Terminal('t').value(True)
         f = Terminal('f').value(False)
-        e = Forward('e')
+        e = Forward()
         n = Terminal('!(').then(e).value(lambda x: not x).skip(')')
         a_empty = Succeed(True)
-        a_e_tail = Forward('a_e_tail')
-        a_e_tail = Terminal(',').then(e).then(
-            a_e_tail, lambda x, y: x and y) | a_empty
+        a_e_tail = Forward()
+        a_e_tail.is_(
+            Terminal(',').then(e).then(a_e_tail, lambda x, y: x and y)
+            | a_empty)
         a = Terminal('&(').then(e).then(
             a_e_tail, lambda x, y: x and y).skip(')')
         o_empty = Succeed(False)
-        o_e_tail = Forward('o_e_tail')
-        o_e_tail = Terminal(',').then(e).then(
-            o_e_tail, lambda x, y: x or y) | o_empty
+        o_e_tail = Forward()
+        o_e_tail.is_(
+            Terminal(',').then(e).then(o_e_tail, lambda x, y: x or y)
+            | o_empty)
         o = Terminal('|(').then(e).then(
             o_e_tail, lambda x, y: x or y).skip(')')
-        e = t | f | n | a | o
+        e.is_(t | f | n | a | o)
         self.assertEqual(e('t'), Succeed(True)(''))
         self.assertEqual(e('f'), Succeed(False)(''))
         self.assertEqual(e('!(t)'), Succeed(False)(''))
@@ -420,7 +422,7 @@ class CoreTest(unittest.TestCase):
         add_sub = op.where(lambda c: c in (operator.add, operator.sub))
         left_paren = One.where(lambda c: c[0] == TERMINAL and c[1] == '(')
         right_paren = One.where(lambda c: c[0] == TERMINAL and c[1] == ')')
-        expr = Forward('expr')
+        expr = Forward()
         factor = (
             num.value(lambda t: t[1]) |
             left_paren.then(expr).skip(right_paren)
@@ -428,15 +430,15 @@ class CoreTest(unittest.TestCase):
         def do_op(left_and_op, right):
             left, op = left_and_op
             return op(left, right)
-        term = Forward('term')
-        term = (
+        term = Forward()
+        term.is_((
             term.then(mult_div, lambda l, o: (l, o)).then(factor, do_op) ^
             factor
-        ).memoize()
-        expr = (
+        ).memoize())
+        expr.is_((
             expr.then(add_sub, lambda l, o: (l, o)).then(term, do_op) ^
             term
-        ).memoize()
+        ).memoize())
         calc = expr.filter(lambda r: not r.remain)
         self.assertEqual(
                 set(expr(tokens)),

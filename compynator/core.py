@@ -601,23 +601,59 @@ class Forward(Parser):
     """A forward declaration of a rule.
 
     This is useful in case the rule is defined recursively. For example, the BNF
-    rule ``exp ::= exp '-' exp`` could be defined as followed::
+    rule ``exp ::= (exp '-' exp) | 'o'`` could be defined as followed::
 
-        >>> f = Forward('exp')
-        >>> exp = f + '-' + f
+        >>> exp = Forward()
+        >>> exp.is_(((exp + '-' + exp) ^ 'o').memoize())
+        >>> set(exp('o'))
+        {Result(value='o', remain='')}
+        >>> sorted(exp('o-o'))
+        [Result(value='o', remain='-o'), Result(value='o-o', remain='')]
 
-    A ``Forward('name')`` is equivalent to ``Parser(lambda tokens:
-    name(tokens))``.
+    A forward declaration of Parser is the same as referring to that parser in
+    a lambda::
+
+        >>> exp = (Succeed(None).then(lambda _: exp + '-' + exp) ^ 'o').memoize()
+        >>> set(exp('o'))
+        {Result(value='o', remain='')}
+        >>> sorted(exp('o-o'))
+        [Result(value='o', remain='-o'), Result(value='o-o', remain='')]
+
+    A ``RuntimeError`` will be raised if a ``Forward`` has not called ``is_``,
+    or if that method is called more than once.
+
+        >>> exp = Forward()
+        >>> exp('abc')
+        Traceback (most recent call last):
+          File "<stdin>", line 1, in ?
+        RuntimeError: A forward declaration has no definition.
+        >>> exp.is_('abc')
+        >>> exp.is_('abc')
+        Traceback (most recent call last):
+          File "<stdin>", line 1, in ?
+        RuntimeError: Already defined.
     """
 
-    def __init__(self, name):
-        self.__name = name
-        # Get the caller's frame. Copied from inspect.currentframe().
-        self.__frame = sys._getframe(1)
+    def __init__(self):
+        self.__parser = None
+
+    def is_(self, parser):
+        """Defines a forward declaration.
+
+        If ``parser`` is not typed ``Parser``, its string representation will
+        be made into a ``Terminal``.
+
+        This method must be called exactly once for each ``Forward`` object. A
+        ``RuntimeError`` will be raised if it is called more than once.
+        """
+        if self.__parser:
+            raise RuntimeError('Already defined.')
+        self.__parser = self._to_parser(parser)
 
     def parse_with_context(self, tokens, context):
-        return self.__frame.f_locals[self.__name].parse_with_context(
-                tokens, context)
+        if not self.__parser:
+            raise RuntimeError('A forward declaration has no definition.')
+        return self.__parser.parse_with_context(tokens, context)
 
 
 # Various combinators for internal use.

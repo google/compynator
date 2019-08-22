@@ -113,10 +113,10 @@ class NicetiesTest(unittest.TestCase):
 
     def test_lookahead_true(self):
         # Taken from https://en.wikipedia.org/wiki/Parsing_expression_grammar.
-        B = Forward('B')
-        B = Terminal('b') + B.repeat(0, 1) + 'c'
-        A = Forward('A')
-        A = Terminal('a') + A.repeat(0, 1) + 'b'
+        B = Forward()
+        B.is_(Terminal('b') + B.repeat(0, 1) + 'c')
+        A = Forward()
+        A.is_(Terminal('a') + A.repeat(0, 1) + 'b')
         S = (Lookahead(A + 'c') + Terminal('a').repeat(1) + B).filter(
                 lambda rs: not rs.remain)
         self.assertFalse(S('aabc'))

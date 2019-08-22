@@ -29,24 +29,26 @@ https://leetcode.com/problems/parsing-a-boolean-expression:
     t = Terminal('t').value(True)
     f = Terminal('f').value(False)
 
-    e = Forward('e')
+    e = Forward()
     n = Terminal('!(').then(e).value(lambda x: not x).skip(')')
 
     a_empty = Succeed(True)
-    a_e_tail = Forward('a_e_tail')
-    a_e_tail = Terminal(',').then(e).then(
-        a_e_tail, lambda x, y: x and y) | a_empty
+    a_e_tail = Forward()
+    a_e_tail.is_(
+        Terminal(',').then(e).then(
+        a_e_tail, lambda x, y: x and y) | a_empty)
     a = Terminal('&(').then(e).then(
         a_e_tail, lambda x, y: x and y).skip(')')
 
     o_empty = Succeed(False)
-    o_e_tail = Forward('o_e_tail')
-    o_e_tail = Terminal(',').then(e).then(
-        o_e_tail, lambda x, y: x or y) | o_empty
+    o_e_tail = Forward()
+    o_e_tail.is_(
+        Terminal(',').then(e).then(
+        o_e_tail, lambda x, y: x or y) | o_empty)
     o = Terminal('|(').then(e).then(
         o_e_tail, lambda x, y: x or y).skip(')')
 
-    e = t | f | n | a | o
+    e.is_(t | f | n | a | o)
 
     self.assertEqual(e('!(f)'), {Result(True, '')})
     self.assertEqual(e('|(f,t)'), {Result(True, '')})
@@ -153,22 +155,22 @@ Advantages of parser combinators versus parser generators are:
         add_sub = op.where(lambda c: c in (operator.add, operator.sub))
         left_paren = One.where(lambda c: c[0] == TERMINAL and c[1] == '(')
         right_paren = One.where(lambda c: c[0] == TERMINAL and c[1] == ')')
-        expr = Forward('expr')
+        expr = Forward()
         factor = (
             num.value(lambda t: t[1]) |
             left_paren.then(expr).skip(right_paren)
         )
         def do_op(left, op, right):
             return op(left, right)
-        term = Forward('term')
-        term = (
+        term = Forward()
+        term.is_((
             Collect(term, mult_div, factor).value(lambda v: do_op(*v)) ^
             factor
-        ).memoize()
-        expr = (
+        ).memoize())
+        expr.is_((
             Collect(expr, add_sub, term).value(lambda v: do_op(*v)) ^
             term
-        ).memoize()
+        ).memoize())
         calc = expr.filter(lambda r: not r.remain)
         self.assertEqual(
                 set(expr(tokens)),

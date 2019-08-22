@@ -38,25 +38,25 @@ class PythonExprTest(unittest.TestCase):
             Digit.repeat(1).value(lambda v: ast.Constant(
                     value=ast.literal_eval(v)))
         )
-        expr = Forward('expr')
+        expr = Forward()
         factor = (
             Terminal('(').then(expr).skip(')') |
             atom
         )
         memotable = {}
-        term = Forward('term')
-        term = (
+        term = Forward()
+        term.is_((
             term.skip('*').then(factor,
                     lambda l, r: ast.BinOp(l, ast.Mult(), r)) ^
             term.skip('/').then(factor,
                     lambda l, r: ast.BinOp(l, ast.Div(), r)) ^
             factor
-        ).memoize()
-        expr = (
+        ).memoize())
+        expr.is_((
             expr.skip('+').then(term, lambda l, r: ast.BinOp(l, ast.Add(), r)) ^
             expr.skip('-').then(term, lambda l, r: ast.BinOp(l, ast.Sub(), r)) ^
             term
-        ).memoize()
+        ).memoize())
         start = expr.skip(Terminal('\n').repeat(0, 1)).filter(
                 lambda r: not r.remain).value(
                 lambda v: ast.fix_missing_locations(
@@ -365,14 +365,14 @@ class PyParsingTest(unittest.TestCase):
         plus, minus, mult, div = map(Terminal, '+-*/')
         addop = (plus | minus).value(lambda o: self._opn[o])
         multop = (mult | div).value(lambda o: self._opn[o])
-        expr = Forward('expr')
+        expr = Forward()
         sub_expr = Terminal('(').then(expr).skip(')')
         factor = Terminal('-').repeat(0, 1).then(
                 fnumber | sub_expr, lambda x, y: -y if x else y)
         term = factor.then(multop, lambda f, o: (f, o)).repeat(0, None,
                 xo_yo).then(factor, xo_x)
-        expr = term.then(addop, lambda f, o: (f, o)).repeat(0, None,
-                xo_yo).then(term, xo_x)
+        expr.is_(term.then(addop, lambda f, o: (f, o)).repeat(
+            0, None, xo_yo).then(term, xo_x))
         self.parser = expr
 
     def _create_pyparser(self):
