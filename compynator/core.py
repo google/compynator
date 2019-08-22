@@ -261,9 +261,10 @@ class Parser:
         """Parses input ``tokens`` under the context of ``context``."""
         return self.__parser_function(tokens)
 
-    def __call__(self, tokens):
+    def parse(self, tokens):
         """Parses the input ``tokens`` under the default context."""
         return self.parse_with_context(tokens, default_parse_context(tokens))
+    __call__ = parse
 
     def _to_parser(self, object):
         if isinstance(object, Parser):
