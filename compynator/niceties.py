@@ -65,6 +65,65 @@ class ITerminal(Parser):
         return Succeed(head)(tokens[len(head):])
 
 
+class Forward(Parser):
+    """A forward declaration of a rule.
+
+    This is useful in case the rule is defined recursively. For example, the BNF
+    rule ``exp ::= (exp '-' exp) | 'o'`` could be defined as followed::
+
+        >>> exp = Forward()
+        >>> exp.is_(((exp + '-' + exp) ^ 'o').memoize())
+        >>> set(exp('o'))
+        {Result(value='o', remain='')}
+        >>> sorted(exp('o-o'))
+        [Result(value='o', remain='-o'), Result(value='o-o', remain='')]
+
+    A forward declaration of Parser is the same as referring to that parser in
+    a lambda::
+
+        >>> exp = (Succeed(None).then(lambda _: exp + '-' + exp) ^ 'o').memoize()
+        >>> set(exp('o'))
+        {Result(value='o', remain='')}
+        >>> sorted(exp('o-o'))
+        [Result(value='o', remain='-o'), Result(value='o-o', remain='')]
+
+    A ``RuntimeError`` will be raised if a ``Forward`` has not called ``is_``,
+    or if that method is called more than once.
+
+        >>> exp = Forward()
+        >>> exp('abc')
+        Traceback (most recent call last):
+          File "<stdin>", line 1, in ?
+        RuntimeError: A forward declaration has no definition.
+        >>> exp.is_('abc')
+        >>> exp.is_('abc')
+        Traceback (most recent call last):
+          File "<stdin>", line 1, in ?
+        RuntimeError: Already defined.
+    """
+
+    def __init__(self):
+        self.__parser = None
+
+    def is_(self, parser):
+        """Defines a forward declaration.
+
+        If ``parser`` is not typed ``Parser``, its string representation will
+        be made into a ``Terminal``.
+
+        This method must be called exactly once for each ``Forward`` object. A
+        ``RuntimeError`` will be raised if it is called more than once.
+        """
+        if self.__parser:
+            raise RuntimeError('Already defined.')
+        self.__parser = self._to_parser(parser)
+
+    def parse_with_context(self, tokens, context):
+        if not self.__parser:
+            raise RuntimeError('A forward declaration has no definition.')
+        return self.__parser.parse_with_context(tokens, context)
+
+
 class Collect(Parser):
     """A combinator that runs through all ``parsers`` in sequence and collects
     their results in a collection of many flattened collections.

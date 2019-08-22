@@ -18,5 +18,5 @@ performance and support for ambiguous/non-deterministic grammars.
 
 from .core import (
         Parser, Result, One, Succeed, Success, Empty, Fail, Failure, Terminal,
-        Forward, ParseContext, ParseOptions)
+        ParseContext, ParseOptions)
 from .niceties import *
