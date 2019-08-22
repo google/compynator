@@ -134,8 +134,8 @@ class Collect(Parser):
         >>> p = Collect(a, b, c)
         >>> set(p('adc'))
         set()
-        >>> p('adc').causes
-        [Failure("Expecting terminal 'b'.", 'dc', ())]
+        >>> p('adc')
+        Failure('Failed to collect.', 'adc', [Failure("Parser index 1: Expecting terminal 'b'.", 'dc', ())])
         >>> set(p('abc'))
         {Result(value=('a', 'b', 'c'), remain='')}
         >>> a = a.repeat(0, 2, take_all=True)
