@@ -43,20 +43,19 @@ class PythonExprTest(unittest.TestCase):
             Terminal('(').then(expr).skip(')') |
             atom
         )
-        memotable = {}
         term = Forward()
-        term.is_((
+        term.is_(
             term.skip('*').then(factor,
                     lambda l, r: ast.BinOp(l, ast.Mult(), r)) ^
             term.skip('/').then(factor,
                     lambda l, r: ast.BinOp(l, ast.Div(), r)) ^
             factor
-        ).memoize())
-        expr.is_((
+        )
+        expr.is_(
             expr.skip('+').then(term, lambda l, r: ast.BinOp(l, ast.Add(), r)) ^
             expr.skip('-').then(term, lambda l, r: ast.BinOp(l, ast.Sub(), r)) ^
             term
-        ).memoize())
+        )
         start = expr.skip(Terminal('\n').repeat(0, 1)).filter(
                 lambda r: not r.remain).value(
                 lambda v: ast.fix_missing_locations(

@@ -332,6 +332,40 @@ class CoreTest(unittest.TestCase):
         # memoization.
         self.assertEqual(len(s('s' * 20)), 21)
 
+    def test_auto_memoize(self):
+        expr = Forward()
+        factor = Alnum | Terminal('(').then(expr).skip(')')
+        term = Forward()
+        term.is_(
+            term.skip('*').then(factor) ^
+            term.skip('/').then(factor) ^
+            factor
+        )
+        expr.is_(
+            expr.skip('+').then(term) ^
+            expr.skip('-').then(term) ^
+            term
+        )
+        r = expr.filter(lambda r: not r.remain)('(1+2*3)/(4+5)')
+        self.assertEqual(r, Succeed('5')(''))
+
+    def test_auto_memoize_with_memoized_parsers(self):
+        expr = Forward()
+        factor = Alnum | Terminal('(').then(expr).skip(')')
+        term = Forward()
+        term.is_((
+            term.skip('*').then(factor) ^
+            term.skip('/').then(factor) ^
+            factor
+        ).memoize())
+        expr.is_((
+            expr.skip('+').then(term) ^
+            expr.skip('-').then(term) ^
+            term
+        ).memoize())
+        r = expr.filter(lambda r: not r.remain)('(1+2*3)/(4+5)')
+        self.assertEqual(r, Succeed('5')(''))
+
     def test_direct_left_recursive(self):
         empty = Succeed('')
         s = Forward()

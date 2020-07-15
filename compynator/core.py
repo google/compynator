@@ -326,7 +326,7 @@ class Parser:
             ...     Result(value='ss', remain=''),
             ... }
         """
-        return _Or(self, self._to_parser(other), biased=False)
+        return _Or(self, self._to_parser(other), biased=False).memoize()
 
     def __rxor__(self, other):
         """Convenient short form to allow ``'abc' ^ parser``.
@@ -666,6 +666,9 @@ class _Then(Parser):
 class _Memoize(Parser):
     def __init__(self, parser):
         self.__parser = parser
+
+    def memoize(self):
+        return self
 
     def parse_with_context(self, tokens, context):
         result_key = (1, id(self.__parser), len(tokens))
