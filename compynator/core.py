@@ -307,7 +307,7 @@ class Parser:
             >>> set(('abc' | p)('abcdefghi'))
             {Result(value='abc', remain='defghi')}
         """
-        return self._to_parser(other) ^ self
+        return self._to_parser(other) | self
 
     def __xor__(self, other):
         """Similar to the ``__or__`` operator, but both parsers are evaluated.
@@ -338,7 +338,7 @@ class Parser:
             >>> set(('abc' ^ p)('abcdefghi'))
             {Result(value='abc', remain='defghi')}
         """
-        return self._to_parser(other) | self
+        return self._to_parser(other) ^ self
 
     def then(self, binder, reducer=lambda x, y: y):
         """Chains ``self`` and parser(s) returned by ``binder`` via ``reducer``.

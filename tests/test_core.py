@@ -150,6 +150,15 @@ class CoreTest(unittest.TestCase):
         self.assertEqual((false ^ true)('f'), Succeed('f')(''))
         self.assertFalse((true ^ false)('c'))
 
+    def test_xor_other_ambiguous(self):
+        t = 't'
+        tt = Terminal('tt')
+        expected = {
+            Result('t', 't'),
+            Result('tt', ''),
+        }
+        self.assertEqual(set((t ^ tt)('tt')), expected)
+
     def test_or_parser(self):
         true = Terminal('t').then(lambda r: Succeed(True))
         false = Terminal('f').then(lambda r: Succeed(False))
@@ -168,7 +177,12 @@ class CoreTest(unittest.TestCase):
         self.assertEqual((false | true)('f'), Succeed('f')(''))
         self.assertFalse((true | false)('c'))
 
-    def test_ambiguous_with_or(self):
+    def test_or_other_unique(self):
+        t = 't'
+        tt = Terminal('tt')
+        self.assertEqual((t | tt)('tt'), Succeed('t')('t'))
+
+    def test_ambiguous_with_xor(self):
         empty = Succeed('')
         s = (Terminal('s') + (lambda x: s) + (lambda x: s)) ^ empty
         expected = {
@@ -180,7 +194,7 @@ class CoreTest(unittest.TestCase):
         }
         self.assertEqual(set(s('ssss')), expected)
 
-    def test_ambiguous_with_xor(self):
+    def test_ambiguous_with_or(self):
         empty = Succeed('')
         s = (Terminal('s') + (lambda x: s) + (lambda x: s)) | empty
         self.assertEqual(s('ssss'), Succeed('ssss')(''))
